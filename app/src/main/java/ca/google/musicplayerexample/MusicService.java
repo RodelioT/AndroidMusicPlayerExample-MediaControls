@@ -28,7 +28,7 @@ public class MusicService extends Service implements
     // Occurs when the MusicService is created
     public void onCreate(){
         super.onCreate(); // Creates the service
-        songPosn=0; // Initialize position
+        songPosn = 0; // Initialize position
         player = new MediaPlayer(); // Create the player
 
         initMusicPlayer();
@@ -112,5 +112,64 @@ public class MusicService extends Service implements
 
         // Uses an asynchronous method to play the song
         player.prepareAsync();
+    }
+
+    public int getPosn(){
+        return player.getCurrentPosition();
+    }
+
+    public int getDur(){
+        return player.getDuration();
+    }
+
+    public boolean isPng(){
+        return player.isPlaying();
+    }
+
+    public void pausePlayer(){
+        player.pause();
+    }
+
+    public void seek(int posn){
+        player.seekTo(posn);
+    }
+
+    public void go(){
+        player.start();
+    }
+
+//    public void playPrev(){
+//        songPosn--;
+//        if(songPosn&lt;0) songPosn=songs.size()-1;
+//        playSong();
+//    }
+//
+//    //skip to next
+//    public void playNext(){
+//        songPosn++;
+//        if(songPosn&gt;=songs.size()) songPosn=0;
+//        playSong();
+//    }
+
+    // Goes to previous song
+    public void playPrev(){
+        // If you play previous on the first track, go to the last track
+        songPosn--;
+        if(songPosn < 0) {
+            songPosn = songs.size()-1;
+        }
+
+        playSong();
+    }
+
+    //skip to next song
+    public void playNext(){
+        //If you play next on the last track, go to the first track
+        songPosn++;
+        if(songPosn >= songs.size()) {
+            songPosn = 0;
+        }
+
+        playSong();
     }
 }
