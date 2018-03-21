@@ -12,7 +12,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -28,7 +27,7 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     private ArrayList<Song> songList; // ArrayList to hold all discovered music on the device
     private ListView songView; // ListView to display all the songs
 
-    private MusicService musicSrv; // Represents the custom class we created
+    private MusicService musicService; // Represents the custom class we created
     private Intent playIntent; // The intent to play music within the MusicService class
     private boolean musicBound = false; // Flag to check if MainActivity is bound to MusicService
 
@@ -108,7 +107,7 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     @Override
     protected void onDestroy() {
         stopService(playIntent);
-        musicSrv=null;
+        musicService = null;
         super.onDestroy();
     }
 
@@ -119,9 +118,9 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
         public void onServiceConnected(ComponentName name, IBinder service) {
             MusicService.MusicBinder binder = (MusicService.MusicBinder)service;
             // Gets the reference to the service so we can interact with it
-            musicSrv = binder.getService();
+            musicService = binder.getService();
             // Passes the songList
-            musicSrv.setList(songList);
+            musicService.setList(songList);
             musicBound = true;
         }
 
@@ -133,12 +132,12 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
     // When a song is selected
     public void songPicked(View view){
-        musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
-        musicSrv.playSong();
+        musicService.setSong(Integer.parseInt(view.getTag().toString()));
+        musicService.playSong();
 
         if(playbackPaused){
             setController();
-            playbackPaused=false;
+            playbackPaused = false;
         }
 
         controller.show(0);
@@ -150,11 +149,11 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
         switch (item.getItemId()) {
             case R.id.action_shuffle:
                 // Call the class that was created in MusicService.java
-                musicSrv.setShuffle();
+                musicService.setShuffle();
                 break;
             case R.id.action_end:
                 stopService(playIntent);
-                musicSrv=null;
+                musicService =null;
                 System.exit(0);
                 break;
         }
@@ -199,7 +198,7 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
         }, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                playPrev();
+                playPrevious();
             }
         });
 
@@ -211,7 +210,7 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     // Plays the next song
     private void playNext(){
         // Calls the method that were made in MusicService.java
-        musicSrv.playNext();
+        musicService.playNext();
 
         if(playbackPaused){
             setController();
@@ -222,9 +221,9 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     }
 
     // Plays the previous song
-    private void playPrev(){
+    private void playPrevious(){
         // Calls the method that were made in MusicService.java
-        musicSrv.playPrev();
+        musicService.playPrevious();
 
         if(playbackPaused){
             setController();
@@ -236,20 +235,20 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
     @Override
     public void start() {
-        musicSrv.go();
+        musicService.go();
     }
 
     @Override
     public void pause() {
         playbackPaused = true;
-        musicSrv.pausePlayer();
+        musicService.pausePlayer();
     }
 
     @Override
     public int getDuration() {
         // Return the current song length if music is playing, else return 0
-        if((musicSrv != null) && musicBound && musicSrv.isPng()) {
-            return musicSrv.getDur();
+        if((musicService != null) && musicBound && musicService.isPng()) {
+            return musicService.getDur();
         } else {
             return 0;
         }
@@ -258,8 +257,8 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     @Override
     public int getCurrentPosition() {
         // Return the current position if music is playing, else return 0
-        if((musicSrv != null) && musicBound && musicSrv.isPng()) {
-            return musicSrv.getPosn();
+        if((musicService != null) && musicBound && musicService.isPng()) {
+            return musicService.getPosn();
         } else {
             return 0;
         }
@@ -267,14 +266,14 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
     @Override
     public void seekTo(int pos) {
-        musicSrv.seek(pos);
+        musicService.seek(pos);
     }
 
     @Override
     public boolean isPlaying() {
         // Checks for certain parameters before checking if a song is playing
-        if(musicSrv != null && musicBound) {
-            return musicSrv.isPng();
+        if(musicService != null && musicBound) {
+            return musicService.isPng();
         } else {
             return false;
         }

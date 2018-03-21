@@ -24,12 +24,13 @@ public class MusicService extends Service implements
 
     // Instance variables
     private MediaPlayer player; // Media player
-    private ArrayList<Song> songs; // List of songs
-    private int songPosn; // Song index/position
+    private ArrayList<Song> songList; // List of songList
+    private int songIndex; // Song index/position
     private final IBinder musicBind = new MusicBinder();
 
     private String songTitle = ";";
-    private static final int NOTIFY_ID=1;
+    private String songArtist = ";";
+    private static final int NOTIFY_ID = 1;
 
     private boolean shuffle = false;
     private Random rand;
@@ -39,7 +40,7 @@ public class MusicService extends Service implements
     // Occurs when the MusicService is created
     public void onCreate(){
         super.onCreate(); // Creates the service
-        songPosn = 0; // Initialize position
+        songIndex = 0; // Initialize position
         player = new MediaPlayer(); // Create the player
         rand = new Random(); // Instantiates the random variable for music shuffling
 
@@ -101,21 +102,21 @@ public class MusicService extends Service implements
                 .setSmallIcon(R.drawable.play)
                 .setTicker(songTitle)
                 .setOngoing(true)
-                .setContentTitle("\"Playing\"")
-                .setContentText(songTitle);
+                .setContentTitle(songTitle)
+                .setContentText(songArtist);
         Notification not = builder.build();
 
         startForeground(NOTIFY_ID, not);
     }
 
     // Receives the song list from the MainActivity
-    public void setList(ArrayList<Song> songList){
-        songs = songList;
+    public void setList(ArrayList<Song> songs){
+        songList = songs;
     }
 
     // Selects a song
     public void setSong(int songIndex){
-        songPosn = songIndex;
+        this.songIndex = songIndex;
     }
 
     // Sets up a binding instance
@@ -130,11 +131,13 @@ public class MusicService extends Service implements
         player.reset();
 
         // Gets the song
-        Song playSong = songs.get(songPosn);
+        Song currentSong = songList.get(songIndex);
         // Gets the song title
-        songTitle = playSong.getTitle();
+        songTitle = currentSong.getTitle();
+        // Gets the song artist
+        songArtist = currentSong.getArtist();
         // Gets the ID of the song
-        long currSong = playSong.getID();
+        long currSong = currentSong.getID();
         // Sets the Uri to the chosen song
         Uri trackUri = ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currSong);
 
@@ -166,8 +169,8 @@ public class MusicService extends Service implements
         player.pause();
     }
 
-    public void seek(int posn){
-        player.seekTo(posn);
+    public void seek(int position){
+        player.seekTo(position);
     }
 
     public void go(){
@@ -175,11 +178,11 @@ public class MusicService extends Service implements
     }
 
     // Goes to previous song
-    public void playPrev(){
+    public void playPrevious(){
         // If 'previous song' is pressed on the first song, go to the last song
-        songPosn--;
-        if(songPosn < 0) {
-            songPosn = songs.size()-1;
+        songIndex--;
+        if(songIndex < 0) {
+            songIndex = songList.size() - 1;
         }
 
         playSong();
@@ -187,19 +190,19 @@ public class MusicService extends Service implements
 
     //skip to next song
     public void playNext(){
-        if(shuffle && songs.size() > 1){
+        if(shuffle && songList.size() > 1){
             // TODO: code proper shuffle function so a song isn't replayed until the rest have been played
             // Sets the next song to a random song that isn't the current song
-            int newSong = songPosn;
-            while((newSong == songPosn)){
-                newSong=rand.nextInt(songs.size());
+            int newSong = songIndex;
+            while((newSong == songIndex)){
+                newSong=rand.nextInt(songList.size());
             }
-            songPosn = newSong;
+            songIndex = newSong;
         } else {
             // If 'next song' is pressed on the last song, go to the first song
-            songPosn++;
-            if(songPosn >= songs.size()) {
-                songPosn=0;
+            songIndex++;
+            if(songIndex >= songList.size()) {
+                songIndex = 0;
             }
         }
 
