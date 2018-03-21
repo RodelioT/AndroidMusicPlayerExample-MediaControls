@@ -65,8 +65,8 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
         // Creates a new adapter (using our custom class)
         // and sets it on the ListView
-        SongAdapter songAdt = new SongAdapter(this, songList);
-        songView.setAdapter(songAdt);
+        SongAdapter songAdapter = new SongAdapter(this, songList);
+        songView.setAdapter(songAdapter);
 
         setController();
     }
