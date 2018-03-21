@@ -34,6 +34,8 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
     private MusicController controller;
 
+    private boolean paused, playbackPaused = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +85,27 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     }
 
     @Override
+    protected void onResume(){
+        super.onResume();
+        if(paused){
+            setController();
+            paused = false;
+        }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        paused = true;
+    }
+
+    @Override
+    protected void onStop() {
+        controller.hide();
+        super.onStop();
+    }
+
+    @Override
     protected void onDestroy() {
         stopService(playIntent);
         musicSrv=null;
@@ -112,6 +135,13 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     public void songPicked(View view){
         musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
         musicSrv.playSong();
+
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
+
+        controller.show(0);
     }
 
     @Override
@@ -119,7 +149,8 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
         //menu item selected
         switch (item.getItemId()) {
             case R.id.action_shuffle:
-                //shuffle (to be implemented later)
+                // Call the class that was created in MusicService.java
+                musicSrv.setShuffle();
                 break;
             case R.id.action_end:
                 stopService(playIntent);
@@ -181,6 +212,12 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     private void playNext(){
         // Calls the method that were made in MusicService.java
         musicSrv.playNext();
+
+        if(playbackPaused){
+            setController();
+            playbackPaused = false;
+        }
+
         controller.show(0);
     }
 
@@ -188,6 +225,12 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
     private void playPrev(){
         // Calls the method that were made in MusicService.java
         musicSrv.playPrev();
+
+        if(playbackPaused){
+            setController();
+            playbackPaused = false;
+        }
+
         controller.show(0);
     }
 
@@ -198,6 +241,7 @@ public class MainActivity extends Activity implements MediaController.MediaPlaye
 
     @Override
     public void pause() {
+        playbackPaused = true;
         musicSrv.pausePlayer();
     }
 

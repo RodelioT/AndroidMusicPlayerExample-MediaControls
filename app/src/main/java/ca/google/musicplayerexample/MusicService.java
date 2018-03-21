@@ -1,5 +1,7 @@
 package ca.google.musicplayerexample;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.Intent;
@@ -12,6 +14,7 @@ import android.os.PowerManager;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 // Handles the music playback
 public class MusicService extends Service implements
@@ -25,11 +28,20 @@ public class MusicService extends Service implements
     private int songPosn; // Song index/position
     private final IBinder musicBind = new MusicBinder();
 
+    private String songTitle = ";";
+    private static final int NOTIFY_ID=1;
+
+    private boolean shuffle = false;
+    private Random rand;
+
+    // TODO: set up AudioManager to handle audio focus between multiple sources
+
     // Occurs when the MusicService is created
     public void onCreate(){
         super.onCreate(); // Creates the service
         songPosn = 0; // Initialize position
         player = new MediaPlayer(); // Create the player
+        rand = new Random(); // Instantiates the random variable for music shuffling
 
         initMusicPlayer();
     }
@@ -60,11 +72,16 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-
+        if(player.getCurrentPosition() > 0){
+            mp.reset();
+            playNext();
+        }
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        // TODO: improve this area for later
+        mp.reset();
         return false;
     }
 
@@ -72,6 +89,23 @@ public class MusicService extends Service implements
     public void onPrepared(MediaPlayer mp) {
         //start music playback
         mp.start();
+
+        // Setting up the notification that displays when a song plays
+        Intent notIntent = new Intent(this, MainActivity.class);
+        notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendInt = PendingIntent.getActivity(this, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification.Builder builder = new Notification.Builder(this);
+
+        builder.setContentIntent(pendInt)
+                .setSmallIcon(R.drawable.play)
+                .setTicker(songTitle)
+                .setOngoing(true)
+                .setContentTitle("\"Playing\"")
+                .setContentText(songTitle);
+        Notification not = builder.build();
+
+        startForeground(NOTIFY_ID, not);
     }
 
     // Receives the song list from the MainActivity
@@ -97,6 +131,8 @@ public class MusicService extends Service implements
 
         // Gets the song
         Song playSong = songs.get(songPosn);
+        // Gets the song title
+        songTitle = playSong.getTitle();
         // Gets the ID of the song
         long currSong = playSong.getID();
         // Sets the Uri to the chosen song
@@ -138,22 +174,9 @@ public class MusicService extends Service implements
         player.start();
     }
 
-//    public void playPrev(){
-//        songPosn--;
-//        if(songPosn&lt;0) songPosn=songs.size()-1;
-//        playSong();
-//    }
-//
-//    //skip to next
-//    public void playNext(){
-//        songPosn++;
-//        if(songPosn&gt;=songs.size()) songPosn=0;
-//        playSong();
-//    }
-
     // Goes to previous song
     public void playPrev(){
-        // If you play previous on the first track, go to the last track
+        // If 'previous song' is pressed on the first song, go to the last song
         songPosn--;
         if(songPosn < 0) {
             songPosn = songs.size()-1;
@@ -164,12 +187,34 @@ public class MusicService extends Service implements
 
     //skip to next song
     public void playNext(){
-        //If you play next on the last track, go to the first track
-        songPosn++;
-        if(songPosn >= songs.size()) {
-            songPosn = 0;
+        if(shuffle && songs.size() > 1){
+            // TODO: code proper shuffle function so a song isn't replayed until the rest have been played
+            // Sets the next song to a random song that isn't the current song
+            int newSong = songPosn;
+            while((newSong == songPosn)){
+                newSong=rand.nextInt(songs.size());
+            }
+            songPosn = newSong;
+        } else {
+            // If 'next song' is pressed on the last song, go to the first song
+            songPosn++;
+            if(songPosn >= songs.size()) {
+                songPosn=0;
+            }
         }
 
         playSong();
     }
+
+    public void setShuffle(){
+        // Toggles the shuffle setting
+        shuffle = !shuffle;
+    }
+
+    @Override
+    public void onDestroy() {
+        // Stopping the notification
+        stopForeground(true);
+    }
+
 }
